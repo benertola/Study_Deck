@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlmodel import Session
 
@@ -14,10 +14,12 @@ ALLOWED_EXTENSIONS = {".pdf", ".pptx", ".docx", ".txt"}
 
 @router.post("")
 async def upload_files(
-    files: List[UploadFile] = File(...),
-    doc_types: List[str] = Form(...),
+    files: Optional[List[UploadFile]] = File(default=None),
+    doc_types: Optional[List[str]] = Form(default=None),
     db: Session = Depends(get_session),
 ):
+    if not files or not doc_types:
+        raise HTTPException(status_code=400, detail="No files provided")
     if len(files) != len(doc_types):
         raise HTTPException(status_code=400, detail="files and doc_types length mismatch")
 
