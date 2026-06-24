@@ -1,5 +1,5 @@
-from typing import List
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from typing import List, Optional
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from fastapi.responses import Response
 from sqlmodel import Session, select
 
@@ -15,11 +15,11 @@ VALID_TYPES = {"flashcards", "summary", "preexam", "past_paper_analysis", "pract
 
 @router.post("/generate")
 async def generate(
-    session_id: int,
-    material_types: List[str],
-    background_tasks: BackgroundTasks,
+    session_id: int = Query(...),
+    material_types: List[str] = Query(...),
+    additional_info: str = Query(default=""),
+    background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_session),
-    additional_info: str = "",
 ):
     invalid = set(material_types) - VALID_TYPES
     if invalid:
