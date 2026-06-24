@@ -19,6 +19,7 @@ async def generate(
     material_types: List[str],
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_session),
+    additional_info: str = "",
 ):
     invalid = set(material_types) - VALID_TYPES
     if invalid:
@@ -49,12 +50,12 @@ async def generate(
         db.commit()
         db.refresh(mat)
         material_ids.append(mat.id)
-        background_tasks.add_task(_run_generation, mat.id, mtype, combined_text, notes_text, slides_text, past_paper_text, exercises_text)
+        background_tasks.add_task(_run_generation, mat.id, mtype, combined_text, notes_text, slides_text, past_paper_text, exercises_text, additional_info)
 
     return {"session_id": session_id, "material_ids": material_ids}
 
 
-async def _run_generation(material_id: int, mtype: str, combined_text: str, notes_text: str, slides_text: str, past_paper_text: str, exercises_text: str = ""):
+async def _run_generation(material_id: int, mtype: str, combined_text: str, notes_text: str, slides_text: str, past_paper_text: str, exercises_text: str = "", additional_info: str = ""):
     from database import engine
     from sqlmodel import Session
 
@@ -65,7 +66,7 @@ async def _run_generation(material_id: int, mtype: str, combined_text: str, note
         db.commit()
 
         try:
-            content = await generate_material(mtype, combined_text, notes_text, slides_text, past_paper_text, exercises_text)
+            content = await generate_material(mtype, combined_text, notes_text, slides_text, past_paper_text, exercises_text, additional_info)
             mat.content = content
             mat.status = "done"
         except Exception as e:

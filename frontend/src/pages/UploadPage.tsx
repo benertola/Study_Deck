@@ -10,6 +10,7 @@ export default function UploadPage() {
   const [slidesFiles, setSlidesFiles] = useState<File[]>([]);
   const [pastPaperFiles, setPastPaperFiles] = useState<File[]>([]);
   const [exerciseFiles, setExerciseFiles] = useState<File[]>([]);
+  const [additionalInfo, setAdditionalInfo] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<MaterialType[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +45,7 @@ export default function UploadPage() {
       ];
 
       const uploadResult = await uploadFiles(allFiles, allTypes);
-      const generateResult = await generateMaterials(uploadResult.session_id, selectedTypes);
+      const generateResult = await generateMaterials(uploadResult.session_id, selectedTypes, additionalInfo);
 
       navigate("/study", {
         state: {
@@ -99,7 +100,19 @@ export default function UploadPage() {
         </section>
 
         <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-5">
-          <h2 className="text-base font-semibold text-gray-800 mb-4">2. Choose study materials</h2>
+          <h2 className="text-base font-semibold text-gray-800 mb-1">2. Additional information <span className="text-gray-400 font-normal">(optional)</span></h2>
+          <p className="text-xs text-gray-400 mb-3">Anything the AI should know — lecturer hints, topic weightings, what to prioritise, etc.</p>
+          <textarea
+            value={additionalInfo}
+            onChange={(e) => setAdditionalInfo(e.target.value)}
+            placeholder='e.g. "The lecturer said Topic 3 will definitely be on the exam." or "Tutorial questions are more important than past papers this year."'
+            rows={4}
+            className="w-full text-sm border border-gray-200 rounded-xl px-4 py-3 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+          />
+        </section>
+
+        <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-5">
+          <h2 className="text-base font-semibold text-gray-800 mb-4">3. Choose study materials</h2>
           <MaterialSelector selected={selectedTypes} onChange={setSelectedTypes} />
         </section>
 

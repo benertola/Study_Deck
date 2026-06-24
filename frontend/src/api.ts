@@ -39,10 +39,12 @@ export async function uploadFiles(
 
 export async function generateMaterials(
   sessionId: number,
-  types: MaterialType[]
+  types: MaterialType[],
+  additionalInfo: string = ""
 ): Promise<GenerateResult> {
   const params = new URLSearchParams({ session_id: String(sessionId) });
   types.forEach((t) => params.append("material_types", t));
+  if (additionalInfo.trim()) params.set("additional_info", additionalInfo.trim());
   const res = await fetch(`${BASE}/generate?${params}`, { method: "POST" });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
