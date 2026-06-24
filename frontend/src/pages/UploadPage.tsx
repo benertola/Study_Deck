@@ -24,6 +24,11 @@ export default function UploadPage() {
       setError("Please select at least one study material type.");
       return;
     }
+    const needsPastPapers = selectedTypes.includes("past_paper_analysis") || selectedTypes.includes("practice_exam");
+    if (needsPastPapers && pastPaperFiles.length === 0) {
+      setError("Past Paper Analysis and Practice Exam require at least one past paper to be uploaded.");
+      return;
+    }
 
     setLoading(true);
     setError(null);
