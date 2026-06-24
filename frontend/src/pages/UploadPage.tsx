@@ -107,7 +107,7 @@ export default function UploadPage() {
             onChange={(e) => setAdditionalInfo(e.target.value)}
             placeholder='e.g. "The lecturer said Topic 3 will definitely be on the exam." or "Tutorial questions are more important than past papers this year."'
             rows={4}
-            className="w-full text-sm border border-gray-200 rounded-xl px-4 py-3 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+            className="w-full text-sm border border-gray-200 rounded-xl px-4 py-3 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none bg-white"
           />
         </section>
 
