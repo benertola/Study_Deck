@@ -1,24 +1,22 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { DocType, MaterialType } from "../api";
+import type { MaterialType } from "../api";
 import { generateMaterials, uploadFiles } from "../api";
 import MaterialSelector from "../components/MaterialSelector";
 import UploadZone from "../components/UploadZone";
 
-interface FileEntry {
-  file: File;
-  docType: DocType;
-}
-
 export default function UploadPage() {
-  const [fileEntries, setFileEntries] = useState<FileEntry[]>([]);
+  const [notesFiles, setNotesFiles] = useState<File[]>([]);
+  const [slidesFiles, setSlidesFiles] = useState<File[]>([]);
+  const [pastPaperFiles, setPastPaperFiles] = useState<File[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<MaterialType[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleGenerate = async () => {
-    if (fileEntries.length === 0) {
+    const totalFiles = notesFiles.length + slidesFiles.length + pastPaperFiles.length;
+    if (totalFiles === 0) {
       setError("Please upload at least one file.");
       return;
     }
@@ -31,11 +29,14 @@ export default function UploadPage() {
     setError(null);
 
     try {
-      const uploadResult = await uploadFiles(
-        fileEntries.map((e) => e.file),
-        fileEntries.map((e) => e.docType)
-      );
+      const allFiles = [...notesFiles, ...slidesFiles, ...pastPaperFiles];
+      const allTypes = [
+        ...notesFiles.map(() => "notes" as const),
+        ...slidesFiles.map(() => "slides" as const),
+        ...pastPaperFiles.map(() => "past_paper" as const),
+      ];
 
+      const uploadResult = await uploadFiles(allFiles, allTypes);
       const generateResult = await generateMaterials(uploadResult.session_id, selectedTypes);
 
       navigate("/study", {
@@ -62,7 +63,26 @@ export default function UploadPage() {
 
         <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-5">
           <h2 className="text-base font-semibold text-gray-800 mb-4">1. Upload your files</h2>
-          <UploadZone onFilesChange={setFileEntries} />
+          <div className="grid grid-cols-1 gap-4">
+            <UploadZone
+              label="Lecture Notes"
+              description="Word docs, PDFs or text files of your lecture notes"
+              files={notesFiles}
+              onFilesChange={setNotesFiles}
+            />
+            <UploadZone
+              label="Lecture Slides"
+              description="PowerPoint or PDF slides from your lectures"
+              files={slidesFiles}
+              onFilesChange={setSlidesFiles}
+            />
+            <UploadZone
+              label="Past Papers"
+              description="Previous exam papers for analysis and practice"
+              files={pastPaperFiles}
+              onFilesChange={setPastPaperFiles}
+            />
+          </div>
         </section>
 
         <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-5">
