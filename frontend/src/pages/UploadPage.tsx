@@ -9,6 +9,7 @@ export default function UploadPage() {
   const [notesFiles, setNotesFiles] = useState<File[]>([]);
   const [slidesFiles, setSlidesFiles] = useState<File[]>([]);
   const [pastPaperFiles, setPastPaperFiles] = useState<File[]>([]);
+  const [pastPaperSolutionFiles, setPastPaperSolutionFiles] = useState<File[]>([]);
   const [exerciseFiles, setExerciseFiles] = useState<File[]>([]);
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<MaterialType[]>([]);
@@ -17,7 +18,7 @@ export default function UploadPage() {
   const navigate = useNavigate();
 
   const handleGenerate = async () => {
-    const totalFiles = notesFiles.length + slidesFiles.length + pastPaperFiles.length + exerciseFiles.length;
+    const totalFiles = notesFiles.length + slidesFiles.length + pastPaperFiles.length + pastPaperSolutionFiles.length + exerciseFiles.length;
     if (totalFiles === 0) {
       setError("Please upload at least one file.");
       return;
@@ -27,7 +28,7 @@ export default function UploadPage() {
       return;
     }
     const needsPastPapers = selectedTypes.includes("past_paper_analysis") || selectedTypes.includes("practice_exam");
-    if (needsPastPapers && pastPaperFiles.length === 0) {
+    if (needsPastPapers && pastPaperFiles.length === 0 && pastPaperSolutionFiles.length === 0) {
       setError("Past Paper Analysis and Practice Exam require at least one past paper to be uploaded.");
       return;
     }
@@ -36,11 +37,12 @@ export default function UploadPage() {
     setError(null);
 
     try {
-      const allFiles = [...notesFiles, ...slidesFiles, ...pastPaperFiles, ...exerciseFiles];
+      const allFiles = [...notesFiles, ...slidesFiles, ...pastPaperFiles, ...pastPaperSolutionFiles, ...exerciseFiles];
       const allTypes = [
         ...notesFiles.map(() => "notes" as const),
         ...slidesFiles.map(() => "slides" as const),
         ...pastPaperFiles.map(() => "past_paper" as const),
+        ...pastPaperSolutionFiles.map(() => "past_paper_solutions" as const),
         ...exerciseFiles.map(() => "exercises" as const),
       ];
 
@@ -86,9 +88,15 @@ export default function UploadPage() {
             />
             <UploadZone
               label="Past Papers"
-              description="Previous exam papers for analysis and practice"
+              description="Previous exam question papers"
               files={pastPaperFiles}
               onFilesChange={setPastPaperFiles}
+            />
+            <UploadZone
+              label="Past Paper Solutions"
+              description="Mark schemes or solution PDFs for the past papers"
+              files={pastPaperSolutionFiles}
+              onFilesChange={setPastPaperSolutionFiles}
             />
             <UploadZone
               label="Exercise / Tutorial Questions"

@@ -8,7 +8,7 @@ MODEL = "claude-sonnet-4-6"
 MAX_TOKENS = 8096
 
 
-async def generate_material(material_type: str, combined_text: str, notes_text: str, slides_text: str, past_paper_text: str, exercises_text: str = "", additional_info: str = "") -> str:
+async def generate_material(material_type: str, combined_text: str, notes_text: str, slides_text: str, past_paper_text: str, past_paper_solutions_text: str = "", exercises_text: str = "", additional_info: str = "") -> str:
     handlers = {
         "flashcards": _flashcards,
         "summary": _summary,
@@ -16,7 +16,7 @@ async def generate_material(material_type: str, combined_text: str, notes_text: 
         "past_paper_analysis": _past_paper_analysis,
         "practice_exam": _practice_exam,
     }
-    return await handlers[material_type](combined_text, notes_text, slides_text, past_paper_text, exercises_text, additional_info)
+    return await handlers[material_type](combined_text, notes_text, slides_text, past_paper_text, past_paper_solutions_text, exercises_text, additional_info)
 
 
 def _additional_info_block(additional_info: str) -> str:
@@ -29,7 +29,7 @@ The student has provided the following context. Treat this as high-priority guid
 """
 
 
-async def _flashcards(text: str, notes: str, slides: str, past_papers: str, exercises: str = "", additional_info: str = "") -> str:
+async def _flashcards(text: str, notes: str, slides: str, past_papers: str, past_paper_solutions: str = "", exercises: str = "", additional_info: str = "") -> str:
     prompt = f"""You are a study assistant. Based on the lecture material below, create flashcards.
 {_additional_info_block(additional_info)}
 Return a JSON array of objects with exactly this shape:
@@ -50,8 +50,8 @@ MATERIAL:
     return raw
 
 
-async def _summary(text: str, notes: str, slides: str, past_papers: str, exercises: str = "", additional_info: str = "") -> str:
-    has_past_papers = bool(past_papers.strip())
+async def _summary(text: str, notes: str, slides: str, past_papers: str, past_paper_solutions: str = "", exercises: str = "", additional_info: str = "") -> str:
+    has_past_papers = bool(past_papers.strip()) or bool(past_paper_solutions.strip())
 
     past_paper_instruction = ""
     if has_past_papers:
@@ -98,8 +98,11 @@ LECTURE SLIDES:
 EXERCISE / TUTORIAL QUESTIONS:
 {exercises[:3000] if exercises.strip() else "None provided."}
 
-PAST PAPERS:
-{past_papers[:3000] if has_past_papers else "None provided."}"""
+PAST PAPERS (questions):
+{past_papers[:2000] if has_past_papers else "None provided."}
+
+PAST PAPER SOLUTIONS (mark schemes):
+{past_paper_solutions[:2000] if past_paper_solutions.strip() else "None provided."}"""
 
     msg = await client.messages.create(
         model=MODEL,
@@ -109,7 +112,7 @@ PAST PAPERS:
     return msg.content[0].text.strip()
 
 
-async def _preexam(text: str, notes: str, slides: str, past_papers: str, exercises: str = "", additional_info: str = "") -> str:
+async def _preexam(text: str, notes: str, slides: str, past_papers: str, past_paper_solutions: str = "", exercises: str = "", additional_info: str = "") -> str:
     prompt = f"""You are a study assistant. Based on the lecture material below, write concise pre-exam notes — the most important points a student should review in the final hour before their exam.
 {_additional_info_block(additional_info)}
 Use markdown: bullet points, bold for key terms. Be brief and scannable.
@@ -125,17 +128,21 @@ MATERIAL:
     return msg.content[0].text.strip()
 
 
-async def _past_paper_analysis(text: str, notes: str, slides: str, past_papers: str, exercises: str = "", additional_info: str = "") -> str:
-    prompt = f"""You are a study assistant. Based on the past exam papers included in the material below, analyse the papers and produce a report covering:
+async def _past_paper_analysis(text: str, notes: str, slides: str, past_papers: str, past_paper_solutions: str = "", exercises: str = "", additional_info: str = "") -> str:
+    prompt = f"""You are a study assistant. Based on the past exam papers and their solutions below, analyse them and produce a report covering:
 - Which topics or question types appear most frequently
 - Which weeks/units/chapters are tested most often
 - Any patterns in question structure or difficulty
+- Common mistakes or key steps shown in the solutions
 - Recommended focus areas for exam preparation
 {_additional_info_block(additional_info)}
 Use markdown with ## headers and tables where appropriate.
 
-MATERIAL:
-{text[:12000]}"""
+PAST PAPERS (questions):
+{past_papers[:6000] if past_papers.strip() else "None provided."}
+
+PAST PAPER SOLUTIONS:
+{past_paper_solutions[:6000] if past_paper_solutions.strip() else "None provided."}"""
 
     msg = await client.messages.create(
         model=MODEL,
@@ -145,16 +152,19 @@ MATERIAL:
     return msg.content[0].text.strip()
 
 
-async def _practice_exam(text: str, notes: str, slides: str, past_papers: str, exercises: str = "", additional_info: str = "") -> str:
-    prompt = f"""You are a study assistant. Based on the lecture material and past papers below, generate a practice exam.
+async def _practice_exam(text: str, notes: str, slides: str, past_papers: str, past_paper_solutions: str = "", exercises: str = "", additional_info: str = "") -> str:
+    prompt = f"""You are a study assistant. Based on the lecture material, past papers and their solutions below, generate a practice exam.
 {_additional_info_block(additional_info)}
 Return a JSON array of objects with exactly this shape:
 [{{"question": "...", "answer": "..."}}]
 
-Include 10–15 questions covering key topics. Return ONLY the JSON array, no other text.
+Include 10–15 questions covering key topics. Use the past paper solutions as a guide for what a high-quality answer looks like. Return ONLY the JSON array, no other text.
 
 MATERIAL:
-{text[:12000]}"""
+{text[:8000]}
+
+PAST PAPER SOLUTIONS:
+{past_paper_solutions[:4000] if past_paper_solutions.strip() else "None provided."}"""
 
     msg = await client.messages.create(
         model=MODEL,

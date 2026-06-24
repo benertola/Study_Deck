@@ -1,6 +1,6 @@
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
-export type DocType = "notes" | "slides" | "past_paper" | "exercises";
+export type DocType = "notes" | "slides" | "past_paper" | "past_paper_solutions" | "exercises";
 export type MaterialType =
   | "flashcards"
   | "summary"
