@@ -9,13 +9,14 @@ export default function UploadPage() {
   const [notesFiles, setNotesFiles] = useState<File[]>([]);
   const [slidesFiles, setSlidesFiles] = useState<File[]>([]);
   const [pastPaperFiles, setPastPaperFiles] = useState<File[]>([]);
+  const [exerciseFiles, setExerciseFiles] = useState<File[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<MaterialType[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleGenerate = async () => {
-    const totalFiles = notesFiles.length + slidesFiles.length + pastPaperFiles.length;
+    const totalFiles = notesFiles.length + slidesFiles.length + pastPaperFiles.length + exerciseFiles.length;
     if (totalFiles === 0) {
       setError("Please upload at least one file.");
       return;
@@ -34,11 +35,12 @@ export default function UploadPage() {
     setError(null);
 
     try {
-      const allFiles = [...notesFiles, ...slidesFiles, ...pastPaperFiles];
+      const allFiles = [...notesFiles, ...slidesFiles, ...pastPaperFiles, ...exerciseFiles];
       const allTypes = [
         ...notesFiles.map(() => "notes" as const),
         ...slidesFiles.map(() => "slides" as const),
         ...pastPaperFiles.map(() => "past_paper" as const),
+        ...exerciseFiles.map(() => "exercises" as const),
       ];
 
       const uploadResult = await uploadFiles(allFiles, allTypes);
@@ -86,6 +88,12 @@ export default function UploadPage() {
               description="Previous exam papers for analysis and practice"
               files={pastPaperFiles}
               onFilesChange={setPastPaperFiles}
+            />
+            <UploadZone
+              label="Exercise / Tutorial Questions"
+              description="Worksheet or tutorial questions and solutions"
+              files={exerciseFiles}
+              onFilesChange={setExerciseFiles}
             />
           </div>
         </section>

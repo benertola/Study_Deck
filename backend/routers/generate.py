@@ -40,6 +40,7 @@ async def generate(
     notes_text = join_by_type("notes")
     slides_text = join_by_type("slides")
     past_paper_text = join_by_type("past_paper")
+    exercises_text = join_by_type("exercises")
 
     material_ids = []
     for mtype in material_types:
@@ -48,12 +49,12 @@ async def generate(
         db.commit()
         db.refresh(mat)
         material_ids.append(mat.id)
-        background_tasks.add_task(_run_generation, mat.id, mtype, combined_text, notes_text, slides_text, past_paper_text)
+        background_tasks.add_task(_run_generation, mat.id, mtype, combined_text, notes_text, slides_text, past_paper_text, exercises_text)
 
     return {"session_id": session_id, "material_ids": material_ids}
 
 
-async def _run_generation(material_id: int, mtype: str, combined_text: str, notes_text: str, slides_text: str, past_paper_text: str):
+async def _run_generation(material_id: int, mtype: str, combined_text: str, notes_text: str, slides_text: str, past_paper_text: str, exercises_text: str = ""):
     from database import engine
     from sqlmodel import Session
 
@@ -64,7 +65,7 @@ async def _run_generation(material_id: int, mtype: str, combined_text: str, note
         db.commit()
 
         try:
-            content = await generate_material(mtype, combined_text, notes_text, slides_text, past_paper_text)
+            content = await generate_material(mtype, combined_text, notes_text, slides_text, past_paper_text, exercises_text)
             mat.content = content
             mat.status = "done"
         except Exception as e:

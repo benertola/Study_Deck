@@ -8,7 +8,7 @@ MODEL = "claude-sonnet-4-6"
 MAX_TOKENS = 8096
 
 
-async def generate_material(material_type: str, combined_text: str, notes_text: str, slides_text: str, past_paper_text: str) -> str:
+async def generate_material(material_type: str, combined_text: str, notes_text: str, slides_text: str, past_paper_text: str, exercises_text: str = "") -> str:
     handlers = {
         "flashcards": _flashcards,
         "summary": _summary,
@@ -16,10 +16,10 @@ async def generate_material(material_type: str, combined_text: str, notes_text: 
         "past_paper_analysis": _past_paper_analysis,
         "practice_exam": _practice_exam,
     }
-    return await handlers[material_type](combined_text, notes_text, slides_text, past_paper_text)
+    return await handlers[material_type](combined_text, notes_text, slides_text, past_paper_text, exercises_text)
 
 
-async def _flashcards(text: str, notes: str, slides: str, past_papers: str) -> str:
+async def _flashcards(text: str, notes: str, slides: str, past_papers: str, exercises: str = "") -> str:
     prompt = f"""You are a study assistant. Based on the lecture material below, create flashcards.
 
 Return a JSON array of objects with exactly this shape:
@@ -40,7 +40,7 @@ MATERIAL:
     return raw
 
 
-async def _summary(text: str, notes: str, slides: str, past_papers: str) -> str:
+async def _summary(text: str, notes: str, slides: str, past_papers: str, exercises: str = "") -> str:
     has_past_papers = bool(past_papers.strip())
 
     past_paper_instruction = ""
@@ -63,6 +63,7 @@ Your job:
 2. The notes and slides may overlap or repeat content. Use your judgment to merge them: if both say the same thing, say it once using the more detailed version. Do not duplicate content.
 3. Organise everything by topic using ## Topic Name headers.
 4. Under each topic write clear bullet points covering all key concepts, definitions, and explanations. Bold important terms.
+5. If exercise/tutorial questions are provided, use them to enrich explanations — they often show how concepts are applied in practice.
 {past_paper_instruction}
 
 Use this structure for each topic:
@@ -79,13 +80,16 @@ Use this structure for each topic:
 ---
 
 LECTURE NOTES:
-{notes[:6000]}
+{notes[:5000]}
 
 LECTURE SLIDES:
-{slides[:6000]}
+{slides[:5000]}
+
+EXERCISE / TUTORIAL QUESTIONS:
+{exercises[:3000] if exercises.strip() else "None provided."}
 
 PAST PAPERS:
-{past_papers[:4000] if has_past_papers else "None provided."}"""
+{past_papers[:3000] if has_past_papers else "None provided."}"""
 
     msg = await client.messages.create(
         model=MODEL,
@@ -95,7 +99,7 @@ PAST PAPERS:
     return msg.content[0].text.strip()
 
 
-async def _preexam(text: str, notes: str, slides: str, past_papers: str) -> str:
+async def _preexam(text: str, notes: str, slides: str, past_papers: str, exercises: str = "") -> str:
     prompt = f"""You are a study assistant. Based on the lecture material below, write concise pre-exam notes — the most important points a student should review in the final hour before their exam.
 
 Use markdown: bullet points, bold for key terms. Be brief and scannable.
@@ -111,7 +115,7 @@ MATERIAL:
     return msg.content[0].text.strip()
 
 
-async def _past_paper_analysis(text: str, notes: str, slides: str, past_papers: str) -> str:
+async def _past_paper_analysis(text: str, notes: str, slides: str, past_papers: str, exercises: str = "") -> str:
     prompt = f"""You are a study assistant. Based on the past exam papers included in the material below, analyse the papers and produce a report covering:
 - Which topics or question types appear most frequently
 - Which weeks/units/chapters are tested most often
@@ -131,7 +135,7 @@ MATERIAL:
     return msg.content[0].text.strip()
 
 
-async def _practice_exam(text: str, notes: str, slides: str, past_papers: str) -> str:
+async def _practice_exam(text: str, notes: str, slides: str, past_papers: str, exercises: str = "") -> str:
     prompt = f"""You are a study assistant. Based on the lecture material and past papers below, generate a practice exam.
 
 Return a JSON array of objects with exactly this shape:
