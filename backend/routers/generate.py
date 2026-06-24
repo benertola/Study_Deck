@@ -28,9 +28,18 @@ async def generate(
     if not files:
         raise HTTPException(status_code=404, detail="Session not found or no files uploaded")
 
+    def join_by_type(doc_type: str) -> str:
+        return "\n\n".join(
+            f"[{f.filename}]\n{f.parsed_text or ''}"
+            for f in files if f.doc_type == doc_type
+        )
+
     combined_text = "\n\n".join(
         f"[{f.doc_type.upper()} — {f.filename}]\n{f.parsed_text or ''}" for f in files
     )
+    notes_text = join_by_type("notes")
+    slides_text = join_by_type("slides")
+    past_paper_text = join_by_type("past_paper")
 
     material_ids = []
     for mtype in material_types:
@@ -39,12 +48,12 @@ async def generate(
         db.commit()
         db.refresh(mat)
         material_ids.append(mat.id)
-        background_tasks.add_task(_run_generation, mat.id, mtype, combined_text)
+        background_tasks.add_task(_run_generation, mat.id, mtype, combined_text, notes_text, slides_text, past_paper_text)
 
     return {"session_id": session_id, "material_ids": material_ids}
 
 
-async def _run_generation(material_id: int, mtype: str, combined_text: str):
+async def _run_generation(material_id: int, mtype: str, combined_text: str, notes_text: str, slides_text: str, past_paper_text: str):
     from database import engine
     from sqlmodel import Session
 
@@ -55,7 +64,7 @@ async def _run_generation(material_id: int, mtype: str, combined_text: str):
         db.commit()
 
         try:
-            content = await generate_material(mtype, combined_text)
+            content = await generate_material(mtype, combined_text, notes_text, slides_text, past_paper_text)
             mat.content = content
             mat.status = "done"
         except Exception as e:
